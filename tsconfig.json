@@ -26,6 +26,8 @@
     "vite.config.ts",
     ".storybook",
     "e2e",
+    "e2e-api",
+    "playwright.api.config.ts",
     "playwright.config.ts"
   ]
 }

@@ -1,15 +1,19 @@
 node_modules
 dist
+*.local
+*.tsbuildinfo
+
+# Storybook
+storybook-static
+*storybook.log
 
 # Playwright
 test-results/
 playwright-report/
 blob-report/
 
-# Storybook
-storybook-static
-*storybook.log
-
 # Vitest (captures des tests en navigateur)
 __screenshots__/
+
+# sorties locales des outils
 .vitest/
