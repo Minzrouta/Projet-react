@@ -1,0 +1,21 @@
+@use '../../styles/tokens' as *;
+
+.muted {
+  color: $text-muted;
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.danger-text {
+  color: $danger;
+}
+
+.success-text {
+  color: $success;
+}

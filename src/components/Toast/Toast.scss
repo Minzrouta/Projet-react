@@ -1,0 +1,23 @@
+@use '../../styles/tokens' as *;
+
+.toast-region {
+  position: fixed;
+  inset: auto $space-4 $space-4 $space-4;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 30;
+
+  @media print {
+    display: none;
+  }
+}
+
+.toast {
+  padding: $space-3 $space-5;
+  background: $text;
+  color: #ffffff;
+  border-radius: $radius-small;
+  box-shadow: $shadow;
+  font-weight: 500;
+}

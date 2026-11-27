@@ -1,0 +1,65 @@
+@use '../../styles/tokens' as *;
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+
+  &--small {
+    gap: $space-2;
+  }
+
+  &--large {
+    gap: $space-5;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  flex-wrap: wrap;
+
+  &--between {
+    justify-content: space-between;
+  }
+
+  &--end {
+    justify-content: flex-end;
+  }
+
+  &--bottom {
+    align-items: flex-end;
+  }
+
+  &--nowrap {
+    flex-wrap: nowrap;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: $space-4;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+
+  &--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    @include narrow {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.narrow-page {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.screen-only {
+  display: contents;
+
+  @media print {
+    display: none;
+  }
+}

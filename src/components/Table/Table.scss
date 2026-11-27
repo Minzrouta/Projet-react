@@ -1,0 +1,55 @@
+@use '../../styles/tokens' as *;
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: $surface;
+
+  th,
+  td {
+    text-align: left;
+    padding: $space-3;
+    border-bottom: 1px solid $border;
+    vertical-align: middle;
+  }
+
+  th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: $text-muted;
+    font-weight: 600;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .strong {
+    font-weight: 600;
+  }
+
+  // Un numéro de facture ne se coupe pas : sur petit écran, c'est le tableau qui défile.
+  td > a {
+    white-space: nowrap;
+  }
+
+  &--compact {
+    font-size: 0.85rem;
+
+    th,
+    td {
+      padding: $space-2;
+    }
+  }
+}

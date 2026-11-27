@@ -1,0 +1,26 @@
+@use '../../styles/tokens' as *;
+
+.login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-5;
+  background: linear-gradient(160deg, $accent-soft, $bg 60%);
+
+  &__card {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: $space-4;
+  }
+
+  &__title {
+    color: $accent;
+  }
+
+  &__subtitle {
+    color: $text-muted;
+  }
+}

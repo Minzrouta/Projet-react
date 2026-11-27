@@ -1,0 +1,63 @@
+@use '../../styles/tokens' as *;
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  min-width: 0;
+
+  > label {
+    display: flex;
+    flex-direction: column;
+    gap: $space-1;
+
+    > span {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: $text-muted;
+    }
+  }
+
+  input:not([type='checkbox']),
+  select,
+  textarea {
+    padding: $space-2 $space-3;
+    border: 1px solid $border;
+    border-radius: $radius-small;
+    background: $surface;
+    width: 100%;
+
+    &:focus {
+      outline: 2px solid $accent-soft;
+      border-color: $accent;
+    }
+
+    &[aria-invalid='true'] {
+      border-color: $danger;
+    }
+  }
+
+  &__error {
+    color: $danger;
+    font-size: 0.8rem;
+  }
+
+  &__hint {
+    color: $text-muted;
+    font-size: 0.8rem;
+  }
+
+  > label.field__inline {
+    flex-direction: row;
+    align-items: center;
+    gap: $space-2;
+  }
+
+  &--numeric {
+    input:not([type='checkbox']),
+    select {
+      width: 110px;
+      text-align: right;
+    }
+  }
+}

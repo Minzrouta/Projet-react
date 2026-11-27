@@ -1,0 +1,32 @@
+@use '../../styles/tokens' as *;
+
+.confirm-dialog {
+  width: min(480px, calc(100vw - 2rem));
+  padding: $space-5;
+  border: 1px solid $border;
+  border-radius: $radius;
+  box-shadow: $shadow;
+  color: $text;
+  background: $surface;
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+    gap: $space-4;
+  }
+
+  &::backdrop {
+    background: rgba(23, 32, 51, 0.5);
+  }
+
+  &__body {
+    color: $text-muted;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: $space-3;
+  }
+}
