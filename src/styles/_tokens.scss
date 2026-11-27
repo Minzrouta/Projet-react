@@ -12,7 +12,8 @@ $bg: #f6f7fb;
 $surface: #ffffff;
 $border: #e3e6ee;
 
-$success: #15803d;
+// Vert d'origine #15803d assombri d'un cran : sur $success-soft il n'atteignait que 4,48:1 (AA demande 4,5:1).
+$success: #147a3a;
 $success-soft: #e7f6ec;
 $warning: #a16207;
 $warning-soft: #fdf6e3;
