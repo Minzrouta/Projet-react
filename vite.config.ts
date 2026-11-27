@@ -8,10 +8,16 @@ import { defineConfig } from 'vite'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
+// /api est relayé vers le backend : le navigateur ne voit qu'une origine, pas de CORS à configurer.
+const server = {
+  port: 5138,
+  proxy: { '/api': process.env.VITE_API_URL ?? 'http://localhost:8080' },
+}
+
 export default defineConfig({
   plugins: [react()],
-  server: { port: 5138 },
-  preview: { port: 5138 },
+  server,
+  preview: server,
   test: {
     projects: [
       {
