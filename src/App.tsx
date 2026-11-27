@@ -18,8 +18,11 @@ const InvoicePage = lazy(() => import('./pages/InvoicePage'))
 const EditorPage = lazy(() => import('./pages/EditorPage'))
 const RemindersPage = lazy(() => import('./pages/RemindersPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const ClientsPage = lazy(() => import('./pages/ClientsPage'))
+const ClientPage = lazy(() => import('./pages/ClientPage'))
 const UsersPage = lazy(() => import('./pages/UsersPage'))
 const UserFormPage = lazy(() => import('./pages/UserFormPage'))
+const SimulationPage = lazy(() => import('./pages/SimulationPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 /** Chacun ne voit que les entrées qui le concernent. */
@@ -29,8 +32,14 @@ function navFor({ accountant, admin }: Session): NavItem[] {
     { to: '/', label: 'Factures' },
     { to: '/new', label: 'Nouvelle facture' },
     { to: '/reminders', label: 'Relances' },
+    { to: '/clients', label: 'Clients' },
     { to: '/dashboard', label: 'Tableau de bord' },
-    ...(admin ? [{ to: '/users', label: 'Utilisateurs' }] : []),
+    ...(admin
+      ? [
+          { to: '/users', label: 'Utilisateurs' },
+          { to: '/simulation', label: 'Simulation' },
+        ]
+      : []),
   ]
 }
 
@@ -85,11 +94,14 @@ export default function App() {
               <Route path="invoices/:id/edit" element={<EditorPage />} />
               <Route path="reminders" element={<RemindersPage />} />
               <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="clients" element={<ClientsPage />} />
+              <Route path="clients/:id" element={<ClientPage />} />
             </Route>
             <Route element={<AdminOnly />}>
               <Route path="users" element={<UsersPage />} />
               <Route path="users/new" element={<UserFormPage />} />
               <Route path="users/:id/edit" element={<UserFormPage />} />
+              <Route path="simulation" element={<SimulationPage />} />
             </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Route>

@@ -94,8 +94,13 @@ test('une relance envoyée quitte la liste des relances à faire', async ({ page
   await expect(rows).toHaveCount(3)
 })
 
-test('le tableau de bord compte les factures en retard', async ({ page }) => {
+test('le tableau de bord et le relevé client reprennent les mêmes chiffres', async ({ page }) => {
   await goTo(page, 'Tableau de bord')
   await expect(page.getByRole('heading', { level: 1, name: 'Tableau de bord' })).toBeVisible()
   await expect(page.getByText('3 factures', { exact: true })).toBeVisible()
+
+  await goTo(page, 'Clients')
+  await page.getByRole('link', { name: 'ACME Industrie' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'ACME Industrie' })).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Factures de ACME Industrie' }).getByRole('row')).toHaveCount(4)
 })
