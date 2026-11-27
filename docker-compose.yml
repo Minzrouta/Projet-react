@@ -3,3 +3,8 @@ services:
     build: .
     ports:
       - "5138:80"
+    environment:
+      # le backend tourne dans sa propre pile Compose, publié sur le port 8080 de l'hôte
+      API_URL: http://host.docker.internal:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
