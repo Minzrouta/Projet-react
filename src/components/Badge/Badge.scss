@@ -1,0 +1,43 @@
+@use '../../styles/tokens' as *;
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  margin-left: $space-2;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: $bg;
+  color: $text-muted;
+  vertical-align: middle;
+  white-space: nowrap;
+
+  &:first-child {
+    margin-left: 0;
+  }
+
+  &--accent {
+    background: $accent-soft;
+    color: $accent-dark;
+  }
+
+  &--success {
+    background: $success-soft;
+    color: $success;
+  }
+
+  &--warning {
+    background: $warning-soft;
+    color: $warning;
+  }
+
+  &--danger {
+    background: $danger-soft;
+    color: $danger;
+  }
+
+  &--info {
+    background: $info-soft;
+    color: $info;
+  }
+}

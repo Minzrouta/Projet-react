@@ -1,0 +1,25 @@
+@use '../../styles/tokens' as *;
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  color: $text-muted;
+  padding: $space-5 0;
+
+  &::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border: 2px solid $border;
+    border-top-color: $accent;
+    border-radius: 50%;
+    animation: loader-spin 0.8s linear infinite;
+  }
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

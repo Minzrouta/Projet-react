@@ -1,0 +1,33 @@
+@use '../../styles/tokens' as *;
+
+@use 'sass:color';
+
+.alert {
+  padding: $space-3 $space-4;
+  border-radius: $radius-small;
+  border: 1px solid transparent;
+
+  &--error {
+    background: $danger-soft;
+    border-color: color.adjust($danger, $lightness: 40%);
+    color: $danger;
+  }
+
+  &--success {
+    background: $success-soft;
+    border-color: color.adjust($success, $lightness: 50%);
+    color: $success;
+  }
+
+  &--info {
+    background: $info-soft;
+    border-color: color.adjust($info, $lightness: 40%);
+    color: $info;
+  }
+
+  &--warning {
+    background: $warning-soft;
+    border-color: color.adjust($warning, $lightness: 45%);
+    color: $warning;
+  }
+}

@@ -1,0 +1,13 @@
+@use '../../styles/tokens' as *;
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius;
+  box-shadow: $shadow;
+  padding: $space-5;
+  min-width: 0;
+}

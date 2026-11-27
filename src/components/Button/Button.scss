@@ -1,0 +1,59 @@
+@use '../../styles/tokens' as *;
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  padding: $space-2 $space-4;
+  border: 1px solid $border;
+  border-radius: $radius-small;
+  background: $surface;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  color: $text;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    border-color: $accent;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $accent;
+    border-color: $accent;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: $accent-dark;
+      border-color: $accent-dark;
+    }
+  }
+
+  &--danger {
+    color: $danger;
+
+    &:hover:not(:disabled) {
+      border-color: $danger;
+      background: $danger-soft;
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+  }
+
+  &--small {
+    padding: $space-1 $space-3;
+    font-size: 0.85rem;
+  }
+
+  @media print {
+    display: none;
+  }
+}
