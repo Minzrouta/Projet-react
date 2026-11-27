@@ -22,6 +22,7 @@ const ClientsPage = lazy(() => import('./pages/ClientsPage'))
 const ClientPage = lazy(() => import('./pages/ClientPage'))
 const UsersPage = lazy(() => import('./pages/UsersPage'))
 const UserFormPage = lazy(() => import('./pages/UserFormPage'))
+const SimulationPage = lazy(() => import('./pages/SimulationPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 /** Chacun ne voit que les entrées qui le concernent. */
@@ -33,7 +34,12 @@ function navFor({ accountant, admin }: Session): NavItem[] {
     { to: '/reminders', label: 'Relances' },
     { to: '/clients', label: 'Clients' },
     { to: '/dashboard', label: 'Tableau de bord' },
-    ...(admin ? [{ to: '/users', label: 'Utilisateurs' }] : []),
+    ...(admin
+      ? [
+          { to: '/users', label: 'Utilisateurs' },
+          { to: '/simulation', label: 'Simulation' },
+        ]
+      : []),
   ]
 }
 
@@ -95,6 +101,7 @@ export default function App() {
               <Route path="users" element={<UsersPage />} />
               <Route path="users/new" element={<UserFormPage />} />
               <Route path="users/:id/edit" element={<UserFormPage />} />
+              <Route path="simulation" element={<SimulationPage />} />
             </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Route>
