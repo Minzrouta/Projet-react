@@ -18,16 +18,19 @@ const InvoicePage = lazy(() => import('./pages/InvoicePage'))
 const EditorPage = lazy(() => import('./pages/EditorPage'))
 const RemindersPage = lazy(() => import('./pages/RemindersPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const UsersPage = lazy(() => import('./pages/UsersPage'))
+const UserFormPage = lazy(() => import('./pages/UserFormPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 /** Chacun ne voit que les entrées qui le concernent. */
-function navFor({ accountant }: Session): NavItem[] {
+function navFor({ accountant, admin }: Session): NavItem[] {
   if (!accountant) return [{ to: '/', label: 'Mes factures' }]
   return [
     { to: '/', label: 'Factures' },
     { to: '/new', label: 'Nouvelle facture' },
     { to: '/reminders', label: 'Relances' },
     { to: '/dashboard', label: 'Tableau de bord' },
+    ...(admin ? [{ to: '/users', label: 'Utilisateurs' }] : []),
   ]
 }
 
@@ -61,6 +64,13 @@ function AccountantOnly() {
   return <Outlet context={session} />
 }
 
+/** Garde des pages d'administration : un utilisateur simple est renvoyé à l'accueil. */
+function AdminOnly() {
+  const session = useSession()
+  if (!session.admin) return <Navigate to="/" replace />
+  return <Outlet context={session} />
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -75,6 +85,11 @@ export default function App() {
               <Route path="invoices/:id/edit" element={<EditorPage />} />
               <Route path="reminders" element={<RemindersPage />} />
               <Route path="dashboard" element={<DashboardPage />} />
+            </Route>
+            <Route element={<AdminOnly />}>
+              <Route path="users" element={<UsersPage />} />
+              <Route path="users/new" element={<UserFormPage />} />
+              <Route path="users/:id/edit" element={<UserFormPage />} />
             </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Route>

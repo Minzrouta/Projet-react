@@ -21,7 +21,7 @@ const preview: Preview = {
       },
     },
     options: {
-      storySort: { order: ['Fondations', 'Composants', 'Authentification', 'Facturation'] },
+      storySort: { order: ['Fondations', 'Composants', 'Authentification', 'Facturation', 'Utilisateurs'] },
     },
     a11y: {
       // Une violation d'accessibilité fait échouer le test de la story.

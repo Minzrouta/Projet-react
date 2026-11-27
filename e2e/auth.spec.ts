@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { login } from './helpers'
+import { goTo, login } from './helpers'
 
 test('une page protégée renvoie vers la connexion', async ({ page }) => {
   await page.goto('/dashboard')
@@ -48,4 +48,14 @@ test('un client ne voit que ses factures émises et aucune page comptable', asyn
   await expect(page.getByRole('heading', { level: 2, name: 'Paiements' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Enregistrer' })).toHaveCount(0)
   await expect(page.getByRole('heading', { level: 2, name: 'Relances' })).toHaveCount(0)
+})
+
+test("l'administration est réservée aux administrateurs", async ({ page }) => {
+  await login(page, 'accountant')
+  await expect(page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('link', { name: 'Utilisateurs' })).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Déconnexion' }).click()
+  await login(page, 'admin')
+  await goTo(page, 'Utilisateurs')
+  await expect(page.getByRole('heading', { level: 1, name: 'Utilisateurs' })).toBeVisible()
 })
