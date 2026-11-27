@@ -1,82 +1,70 @@
-# 38 — Facturation & relances
+# Facturation & relances
 
-Le service comptable (rôle ACCOUNTANT) prépare des factures en brouillon puis les émet : elles reçoivent un numéro continu FAC-AAAA-NNNN et ne sont plus jamais modifiées. Les paiements partiels et les avoirs (AVO-AAAA-NNNN) soldent la facture ; les retards sont relancés à J+7, J+15 et J+30. Les clients consultent leurs factures émises.
+Projet React de la majeure MTI, sujet n°38. Je pars du front `invoicing` fourni avec le cours : six pages, des appels bouchonnés, une seule feuille Sass. Ce fichier est mon plan avant de toucher au code. Je le remplacerai par la vraie documentation à la fin.
 
-Application React (TypeScript strict, Vite, React Router, Sass). Les appels à l'API sont **bouchonnés** dans `src/mocks/api.ts` : l'application fonctionne seule, sans backend. Les données de démonstration (`src/mocks/data.ts`) sont en mémoire et réinitialisées à chaque rechargement.
+## Le projet de départ
 
-Spécification de l'API : [`project/CLAUDE.md`](../../../CLAUDE.md), §5.38.
+Le service comptable prépare des factures en brouillon puis les émet. Une facture émise reçoit un numéro `FAC-AAAA-NNNN` et ne bouge plus : on la corrige par un avoir. Les paiements partiels et les avoirs soldent la facture, les retards se relancent à J+7, J+15 et J+30. Les clients consultent leurs factures.
 
-## Démarrer
-
-Version de Node : **26.13.1** (fichier `.nvmrc`), avec npm 11.20 ; Vite 8.3, React 19.3 et React Router 8.5.
+Lancer le projet tel quel :
 
 ```bash
-nvm use            # lit .nvmrc (nvm install si la version manque)
+nvm use
 npm install
 npm run dev        # http://localhost:5138
 ```
 
-| Commande | Effet |
-|---|---|
-| `npm run dev` | Serveur de développement sur le port 5138 |
-| `npm run build` | Vérification TypeScript (strict) puis build Vite dans `dist/` |
-| `npm run preview` | Sert le build de `dist/` sur le port 5138 |
-| `npm run lint:styles` | Vérifie que la feuille Sass `src/styles/main.scss` compile |
+Comptes : `claire@example.com / claire123` (comptable), `acme@example.com / acme123` (client), `admin@example.com / admin123`.
 
-Avec Docker, depuis ce dossier : `docker compose up --build -d` (même port), `docker compose down` pour arrêter.
+## Ce que demande le sujet
 
-## Comptes de démonstration
+- [ ] brancher les appels au backend (aujourd'hui tout passe par `src/mocks/api.ts`)
+- [ ] gérer l'authentification, l'expiration du token et le refresh token
+- [ ] faire une librairie de composants UI
+- [ ] un Storybook avec les composants et leurs différents cas
+- [ ] au moins un test E2E avec Playwright
+- [ ] une page de gestion des utilisateurs (CRUD)
+- [ ] appliquer les bonnes pratiques UX/UI
+- [ ] ne pas changer le visuel des composants actuels
 
-Rappelés sur la page de connexion (bouton « Utiliser »).
+Contraintes : on ne touche pas au backend, on garde la stack (React, React Router, Vite, Sass), on peut ajouter des librairies.
 
-| E-mail | Mot de passe | Rôle |
-|---|---|---|
-| admin@example.com | admin123 | ADMIN — comptable d'office |
-| claire@example.com | claire123 | USER — rôle ACCOUNTANT |
-| acme@example.com | acme123 | USER — client, une facture en retard |
-| globex@example.com | globex123 | USER — client |
+Critères de notation que je garde sous les yeux : la démarche de refactoring, la qualité des composants et de leur contrat, la réutilisation, aucune responsabilité CSS dans les pages, des composants autoporteurs (le composant, son CSS, ses stories).
 
-## Routes
+## Ce que j'ai relevé en lisant le code
 
-Toutes les routes, sauf `/login`, exigent d'être connecté. Les routes **ADMIN** redirigent un utilisateur simple vers l'accueil.
+- Aucun composant : chaque page écrit son HTML avec des classes globales (`btn btn--primary`, `card stack stack--small`, `badge badge--danger`).
+- `src/styles/main.scss` fait 776 lignes et mélange reset, mise en page, éléments communs et styles de pages.
+- Les pages appellent `mockApi` en direct. Chaque page refait son `useEffect` avec ses états `loading` et `error`, et aucune ne protège contre une réponse arrivée en retard.
+- `useAccountant()` redemande les rôles à chaque page.
+- Dans l'éditeur, les lignes de facture ont `key={i}`. Si je retire la première ligne, React recycle les champs de la suivante.
+- L'utilisateur connecté vit dans un état React : un rechargement déconnecte. Ça ira pour le bouchon, plus avec un vrai token.
+- Les champs des formulaires de paiement et d'avoir n'ont qu'un `aria-label`, sans libellé visible. Les erreurs s'affichent dans une `div` que les lecteurs d'écran n'annoncent pas.
+- Émettre une facture est irréversible et part au premier clic.
+- La navigation montre « Relances » et « Tableau de bord » aux clients, qui tombent sur « Réservé au service comptable ».
 
-| Route | Page | Accès | Description |
-|---|---|---|---|
-| `/login` | `LoginPage` | Public | Connexion |
-| `/` | `InvoicesPage` | Connecté | Toutes les factures (comptable) ou mes factures (client), filtres par statut |
-| `/new` | `EditorPage` | Connecté | Nouvelle facture |
-| `/invoices/:id/edit` | `EditorPage` | Connecté | Modifier un brouillon |
-| `/invoices/:id` | `InvoicePage` | Connecté | Détail : lignes, paiements, avoirs, relances |
-| `/reminders` | `RemindersPage` | Connecté | Relances à envoyer |
-| `/dashboard` | `DashboardPage` | Connecté | Facturé, encaissé, restant dû, retards |
+## Ordre de travail
 
-## Endpoints bouchonnés
+Une branche et une PR par étape. Je relis chaque PR avant de la fusionner et la CI doit être verte.
 
-Mêmes routes, DTO, règles métier et format d'erreur que l'API Spring Boot.
+1. **Tests E2E sur l'existant.** Avant de refactorer, je décris avec Playwright ce que l'application fait aujourd'hui : connexion, cycle de vie d'une facture, relances. Ces tests me diront si je casse quelque chose pendant la suite. J'ajoute la CI dans la même PR.
+2. **Outillage et composants de base.** Storybook, lint, puis les composants sortis de `main.scss` : Button, Badge, Card, Field, Alert, Table, les composants de mise en page. Un dossier par composant avec son `.tsx`, son `.scss` et ses stories. Je recopie les règles Sass telles quelles pour garder le rendu. Les pages ne changent pas encore.
+3. **Client HTTP.** Les types de l'API d'après le Swagger, un client `fetch`, le token d'accès, le refresh sur 401, les erreurs au format du backend. Pas encore branché.
+4. **Migration des pages.** Les pages passent sur les composants et sur le client HTTP en même temps, puis je supprime `main.scss`. Je garde le bouchon derrière la même interface que le client HTTP pour que les tests E2E tournent sans backend.
+5. **Gestion des utilisateurs.** Liste paginée, création, modification, suppression, sur `/api/users`.
+6. **UX.** Confirmation avant les actions irréversibles, messages de succès, erreurs avec bouton pour réessayer, navigation selon le rôle. S'il reste du temps : une page d'encours par client et une page pour piloter la simulation de pannes du backend, qui sert à tester les états de chargement et d'erreur.
+7. **Docker et documentation.**
 
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `GET /api/invoices/me/roles`
-- `POST /api/invoices` — ACCOUNTANT
-- `PUT /api/invoices/{id}` — ACCOUNTANT, brouillon uniquement
-- `POST /api/invoices/{id}/issue` — numéro FAC continu, sans trou
-- `GET /api/invoices?status=&clientId=&overdue=`
-- `GET /api/invoices/{id}`
-- `POST /api/invoices/{id}/payments` — paiements + avoirs ≤ TTC
-- `POST /api/invoices/{id}/credit-notes` — avoir ≤ reste dû
-- `GET /api/invoices/reminders/due` — ACCOUNTANT
-- `POST /api/invoices/{id}/reminders` — une relance par niveau
-- `GET /api/invoices/stats?year=` — ACCOUNTANT
-- `GET /api/invoices/clients`
+## Règles que je me fixe
 
-## Organisation
+- Une page assemble des composants. Elle ne contient ni `className` ni `style`.
+- Les couleurs et les espacements viennent des variables Sass existantes, regroupées dans un fichier de tokens.
+- Un composant reçoit ses données par ses props et remonte les événements par des callbacks. Il n'appelle pas l'API. Les pages et les hooks s'en chargent.
+- Je teste ce que voit l'utilisateur : sélecteurs par rôle et par libellé, pas par classe CSS.
+- Si une bonne pratique d'accessibilité demande de modifier le rendu d'origine, je le note dans la PR.
 
-```
-src/
-├── main.tsx          # point d'entrée
-├── App.tsx           # contexte d'authentification, en-tête, routes
-├── pages/            # une page par route
-├── mocks/api.ts      # API bouchonnée (mockApi)
-├── mocks/data.ts     # données de démonstration
-└── styles/main.scss  # feuille de style unique
-```
+## Points à vérifier en route
+
+- Le CORS du backend autorise les ports 5101 à 5111 et mon front tourne sur 5138. Je compte passer par le proxy de Vite pour rester en même origine, à tester.
+- Où garder le refresh token pour survivre à un rechargement sans l'exposer plus que nécessaire.
+- Le backend refuse d'émettre une facture déjà échue : impossible de créer des retards par l'API pour une démo. Le bouchon restera utile pour ça.
