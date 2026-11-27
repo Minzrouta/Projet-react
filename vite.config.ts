@@ -4,14 +4,29 @@ import { fileURLToPath } from 'node:url'
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
 import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
-import { defineConfig } from 'vite'
+import { defineConfig, type ServerOptions } from 'vite'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
+// /api est relayé vers le backend : le navigateur ne voit qu'une origine.
+// Le relais retire l'en-tête Origin : le CORS du backend n'autorise que les ports 5101 à 5111 et
+// répondrait 403, alors que ces appels sont de même origine pour le navigateur.
+const server: ServerOptions = {
+  port: 5138,
+  proxy: {
+    '/api': {
+      target: process.env.VITE_API_URL ?? 'http://localhost:8080',
+      configure: (proxy) => {
+        proxy.on('proxyReq', (request) => request.removeHeader('origin'))
+      },
+    },
+  },
+}
+
 export default defineConfig({
   plugins: [react()],
-  server: { port: 5138 },
-  preview: { port: 5138 },
+  server,
+  preview: server,
   test: {
     projects: [
       {
