@@ -1,0 +1,22 @@
+@use '../../styles/tokens' as *;
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+
+  &__label {
+    color: $text-muted;
+    font-weight: 700;
+  }
+
+  &__value {
+    font-size: 1.8rem;
+    font-weight: 800;
+  }
+
+  &__hint {
+    font-size: 0.85rem;
+    color: $text-muted;
+  }
+}
