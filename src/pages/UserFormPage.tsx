@@ -8,7 +8,7 @@ import { useToast } from '../components/Toast'
 import { UserForm, type UserFormValues } from '../features/users/UserForm'
 import { useAction } from '../hooks/useAction'
 import { useQuery } from '../hooks/useQuery'
-import { api } from '../lib/api'
+import { api, toApiError } from '../lib/api'
 
 /** Création (`/users/new`) ou modification (`/users/:id/edit`) d'un utilisateur. */
 export default function UserFormPage() {
@@ -24,17 +24,22 @@ export default function UserFormPage() {
 
   async function submit(values: UserFormValues) {
     const { email, displayName, role, enabled, password, accountant } = values
-    const done = await save.run(async () => {
-      const user = id ? await api.updateUser(id, { email, displayName, role, enabled }) : await api.createUser({ email, displayName, role, password })
-      // Le rôle comptable est porté par l'application Facturation, pas par le compte : second appel.
-      const wasAccountant = existing.data?.accountant ?? false
-      const wanted = role !== 'ADMIN' && accountant
+    const user = await save.run(() => (id ? api.updateUser(id, { email, displayName, role, enabled }) : api.createUser({ email, displayName, role, password })))
+    if (!user) return
+
+    // Le rôle comptable est porté par l'application Facturation, pas par le compte : second appel.
+    // S'il échoue, le compte est déjà enregistré : on le dit et on ouvre sa fiche, sans rejouer la création.
+    const wasAccountant = existing.data?.accountant ?? false
+    const wanted = role !== 'ADMIN' && accountant
+    try {
       if (wanted && !wasAccountant) await api.grantAccountant(user.id)
       if (!wanted && wasAccountant) await api.revokeAccountant(user.id)
-      return user
-    })
-    if (!done) return
-    toast(id ? `${done.displayName} a été modifié` : `${done.displayName} a été créé`)
+    } catch (e) {
+      toast(`${user.displayName} est enregistré, mais son rôle comptable n'a pas pu être mis à jour : ${toApiError(e).message}`)
+      navigate(`/users/${user.id}/edit`)
+      return
+    }
+    toast(id ? `${user.displayName} a été modifié` : `${user.displayName} a été créé`)
     navigate('/users')
   }
 
