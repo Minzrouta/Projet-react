@@ -1,0 +1,776 @@
+// ==========================================================================
+// Facturation & relances — feuille de style unique, écrite à la main
+// Ordre : variables, reset, mise en page, éléments communs, puis une section par page.
+// ==========================================================================
+
+@use 'sass:color';
+
+// ---------- Variables ----------
+
+$accent: #1e40af;
+$accent-dark: color.adjust($accent, $lightness: -8%);
+$accent-soft: color.mix($accent, #ffffff, 12%);
+
+$text: #172033;
+$text-muted: #5d667a;
+$bg: #f6f7fb;
+$surface: #ffffff;
+$border: #e3e6ee;
+
+$success: #15803d;
+$success-soft: #e7f6ec;
+$warning: #a16207;
+$warning-soft: #fdf6e3;
+$danger: #b91c1c;
+$danger-soft: #fdecec;
+$info: #1d4ed8;
+$info-soft: #e8efff;
+
+$font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+$space-1: 0.25rem;
+$space-2: 0.5rem;
+$space-3: 0.75rem;
+$space-4: 1rem;
+$space-5: 1.5rem;
+$space-6: 2rem;
+
+$radius: 10px;
+$radius-small: 6px;
+$shadow: 0 1px 2px rgba(23, 32, 51, 0.06), 0 4px 16px rgba(23, 32, 51, 0.06);
+
+$breakpoint: 720px;
+
+@mixin narrow {
+  @media (max-width: $breakpoint) {
+    @content;
+  }
+}
+
+// ---------- Reset ----------
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: $font;
+  font-size: 15px;
+  line-height: 1.5;
+  color: $text;
+  background: $bg;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.6rem;
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: 1.2rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+}
+
+a {
+  color: $accent;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+code {
+  font-family: $mono;
+  font-size: 0.9em;
+  background: $bg;
+  padding: 0 $space-1;
+  border-radius: 4px;
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+// ---------- Mise en page ----------
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: $space-5;
+  padding: $space-3 $space-5;
+  background: $surface;
+  border-bottom: 1px solid $border;
+  flex-wrap: wrap;
+
+  &__brand {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: $accent;
+    white-space: nowrap;
+  }
+
+  &__nav {
+    display: flex;
+    gap: $space-1;
+    flex: 1;
+    flex-wrap: wrap;
+
+    a {
+      padding: $space-2 $space-3;
+      border-radius: $radius-small;
+      color: $text-muted;
+      text-decoration: none;
+      font-weight: 500;
+
+      &:hover {
+        background: $bg;
+        color: $text;
+      }
+
+      &.active {
+        background: $accent-soft;
+        color: $accent-dark;
+      }
+    }
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    font-size: 0.9rem;
+  }
+}
+
+.app-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: $space-6 $space-5;
+
+  @include narrow {
+    padding: $space-5 $space-4;
+  }
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $space-4;
+  margin-bottom: $space-5;
+  flex-wrap: wrap;
+
+  p {
+    color: $text-muted;
+    margin-top: $space-1;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+
+  &--small {
+    gap: $space-2;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  flex-wrap: wrap;
+
+  &--between {
+    justify-content: space-between;
+  }
+
+  &--end {
+    justify-content: flex-end;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: $space-4;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+
+  &--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    @include narrow {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.toolbar {
+  display: flex;
+  gap: $space-3;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: $space-5;
+
+  .field {
+    min-width: 160px;
+  }
+}
+
+.section {
+  margin-top: $space-6;
+
+  > h2 {
+    margin-bottom: $space-3;
+  }
+}
+
+// ---------- Éléments communs ----------
+
+.card {
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius;
+  box-shadow: $shadow;
+  padding: $space-5;
+
+  &--link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: border-color 0.15s, transform 0.15s;
+
+    &:hover {
+      border-color: $accent;
+      transform: translateY(-1px);
+    }
+  }
+
+  &__title {
+    font-weight: 600;
+    margin-bottom: $space-2;
+  }
+
+  &__meta {
+    color: $text-muted;
+    font-size: 0.875rem;
+  }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  padding: $space-2 $space-4;
+  border: 1px solid $border;
+  border-radius: $radius-small;
+  background: $surface;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  color: $text;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    border-color: $accent;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $accent;
+    border-color: $accent;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: $accent-dark;
+      border-color: $accent-dark;
+    }
+  }
+
+  &--danger {
+    color: $danger;
+
+    &:hover:not(:disabled) {
+      border-color: $danger;
+      background: $danger-soft;
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+  }
+
+  &--small {
+    padding: $space-1 $space-3;
+    font-size: 0.85rem;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+
+  > span {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: $text-muted;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: $space-2 $space-3;
+    border: 1px solid $border;
+    border-radius: $radius-small;
+    background: $surface;
+    width: 100%;
+
+    &:focus {
+      outline: 2px solid $accent-soft;
+      border-color: $accent;
+    }
+  }
+
+  textarea {
+    min-height: 90px;
+    resize: vertical;
+  }
+
+  &__error {
+    color: $danger;
+    font-size: 0.8rem;
+  }
+
+  &__hint {
+    color: $text-muted;
+    font-size: 0.8rem;
+  }
+
+  &--inline {
+    flex-direction: row;
+    align-items: center;
+    gap: $space-2;
+
+    input {
+      width: auto;
+    }
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $space-4;
+
+  .full {
+    grid-column: 1 / -1;
+  }
+
+  @include narrow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: $surface;
+
+  th,
+  td {
+    text-align: left;
+    padding: $space-3;
+    border-bottom: 1px solid $border;
+    vertical-align: middle;
+  }
+
+  th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: $text-muted;
+    font-weight: 600;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  &--compact {
+    font-size: 0.85rem;
+
+    th,
+    td {
+      padding: $space-2;
+    }
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  margin-left: $space-2;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: $bg;
+  color: $text-muted;
+  vertical-align: middle;
+  white-space: nowrap;
+
+  &:first-child {
+    margin-left: 0;
+  }
+
+  &--accent {
+    background: $accent-soft;
+    color: $accent-dark;
+  }
+
+  &--success {
+    background: $success-soft;
+    color: $success;
+  }
+
+  &--warning {
+    background: $warning-soft;
+    color: $warning;
+  }
+
+  &--danger {
+    background: $danger-soft;
+    color: $danger;
+  }
+
+  &--info {
+    background: $info-soft;
+    color: $info;
+  }
+}
+
+.alert {
+  padding: $space-3 $space-4;
+  border-radius: $radius-small;
+  margin-bottom: $space-4;
+  border: 1px solid transparent;
+
+  &--error {
+    background: $danger-soft;
+    border-color: color.adjust($danger, $lightness: 40%);
+    color: $danger;
+  }
+
+  &--success {
+    background: $success-soft;
+    border-color: color.adjust($success, $lightness: 50%);
+    color: $success;
+  }
+
+  &--info {
+    background: $info-soft;
+    border-color: color.adjust($info, $lightness: 40%);
+    color: $info;
+  }
+
+  &--warning {
+    background: $warning-soft;
+    border-color: color.adjust($warning, $lightness: 45%);
+    color: $warning;
+  }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  color: $text-muted;
+  padding: $space-5 0;
+
+  &::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border: 2px solid $border;
+    border-top-color: $accent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty {
+  text-align: center;
+  padding: $space-6 $space-4;
+  color: $text-muted;
+  background: $surface;
+  border: 1px dashed $border;
+  border-radius: $radius;
+}
+
+// barre de progression native : la largeur vient des attributs value / max (pas de style inline)
+progress.progress {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  height: 8px;
+  border: none;
+  border-radius: 999px;
+  background: $bg;
+  color: $accent;
+  overflow: hidden;
+
+  &::-webkit-progress-bar {
+    background: $bg;
+    border-radius: 999px;
+  }
+
+  &::-webkit-progress-value {
+    background: $accent;
+    border-radius: 999px;
+    transition: width 0.3s;
+  }
+
+  &::-moz-progress-bar {
+    background: $accent;
+    border-radius: 999px;
+  }
+
+  &--success {
+    color: $success;
+
+    &::-webkit-progress-value {
+      background: $success;
+    }
+
+    &::-moz-progress-bar {
+      background: $success;
+    }
+  }
+
+  &--danger {
+    color: $danger;
+
+    &::-webkit-progress-value {
+      background: $danger;
+    }
+
+    &::-moz-progress-bar {
+      background: $danger;
+    }
+  }
+
+  &--thick {
+    height: 14px;
+  }
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-3;
+  margin-top: $space-5;
+  color: $text-muted;
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: $text-muted;
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.danger-text {
+  color: $danger;
+}
+
+.success-text {
+  color: $success;
+}
+
+dl.details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: $space-2 $space-5;
+  margin: 0;
+
+  dt {
+    color: $text-muted;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+// ---------- Page : Connexion ----------
+
+.login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-5;
+  background: linear-gradient(160deg, $accent-soft, $bg 60%);
+
+  &__card {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: $space-4;
+  }
+
+  &__title {
+    color: $accent;
+  }
+
+  &__demo {
+    border-top: 1px solid $border;
+    padding-top: $space-4;
+
+    h2 {
+      font-size: 0.95rem;
+      margin-bottom: $space-2;
+    }
+
+    .table {
+      margin-bottom: $space-2;
+    }
+  }
+}
+
+// ---------- Éléments partagés par les pages ----------
+
+.narrow-page {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: $space-4;
+  text-decoration: none;
+  color: $text-muted;
+
+  &:hover {
+    color: $accent;
+  }
+}
+
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: $space-4;
+  margin-bottom: $space-5;
+}
+
+.kpi {
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius;
+  box-shadow: $shadow;
+  padding: $space-4;
+
+  &__value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: $accent-dark;
+  }
+
+  &__label {
+    color: $text-muted;
+    font-size: 0.85rem;
+  }
+}
+
+// ---------- Commun ----------
+
+.row--wrap {
+  flex-wrap: wrap;
+}
+
+.num-input {
+  width: 110px;
+  text-align: right;
+}
+
+// ---------- Page : Tableau de bord ----------
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+
+  &__label {
+    color: $text-muted;
+    font-weight: 700;
+  }
+
+  &__value {
+    font-size: 1.8rem;
+    font-weight: 800;
+  }
+}

@@ -1,0 +1,5 @@
+services:
+  front-invoicing:
+    build: .
+    ports:
+      - "5138:80"
