@@ -1,98 +1,189 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
-import { mockApi, type ApiError, type InvoiceDto, type PaymentMethod } from '../mocks/api'
-import { STATUS, day, euro, useAccountant } from './InvoicesPage'
-
-const METHODS: Record<PaymentMethod, string> = { TRANSFER: 'Virement', CARD: 'Carte', CHECK: 'Chèque', CASH: 'Espèces' }
+import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
+import { Alert } from '../components/Alert'
+import { Button, ButtonLink } from '../components/Button'
+import { Card } from '../components/Card'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { ErrorState } from '../components/ErrorState'
+import { Grid, ScreenOnly, Stack } from '../components/Layout'
+import { Loader } from '../components/Loader'
+import { PageHeader } from '../components/PageHeader'
+import { ProgressBar } from '../components/ProgressBar'
+import { Text } from '../components/Text'
+import { useToast } from '../components/Toast'
+import { useSession } from '../features/auth/session'
+import { CreditNoteForm } from '../features/invoices/CreditNoteForm'
+import { METHOD_LABEL } from '../features/invoices/invoice'
+import { InvoiceLines } from '../features/invoices/InvoiceLines'
+import { InvoiceStatusBadge } from '../features/invoices/InvoiceTable'
+import { PaymentForm } from '../features/invoices/PaymentForm'
+import { ReminderTrack } from '../features/invoices/ReminderTrack'
+import { useAction } from '../hooks/useAction'
+import { useQuery } from '../hooks/useQuery'
+import { api, type InvoiceDto } from '../lib/api'
+import { day, euro, plural } from '../lib/format'
 
 export default function InvoicePage() {
   const { id = '' } = useParams()
-  const accountant = useAccountant()
-  const [inv, setInv] = useState<InvoiceDto | null>(null)
-  const [pay, setPay] = useState({ date: new Date().toISOString().slice(0, 10), amount: '', method: 'TRANSFER' as PaymentMethod })
-  const [credit, setCredit] = useState({ amount: '', reason: '' })
-  const [error, setError] = useState<string | null>(null)
+  const { accountant } = useSession()
+  const invoice = useQuery(`invoice:${id}`, () => api.getInvoice(id))
+  const back = { to: '/', label: accountant ? 'Factures' : 'Mes factures' }
 
-  useEffect(() => {
-    mockApi.get(id).then(setInv).catch((e: ApiError) => setError(e.message))
-  }, [id])
+  if (!invoice.data) {
+    return (
+      <>
+        <PageHeader title="Facture" back={back} />
+        {invoice.error ? <ErrorState error={invoice.error} onRetry={invoice.error.status === 404 ? undefined : invoice.reload} /> : <Loader />}
+      </>
+    )
+  }
+  return <InvoiceView invoice={invoice.data} accountant={accountant} back={back} onChange={invoice.setData} />
+}
 
-  async function run(action: () => Promise<InvoiceDto>) {
-    setError(null)
-    try {
-      setInv(await action())
-      return true
-    } catch (e) {
-      const err = e as ApiError
-      setError(err.fields ? Object.values(err.fields).join(' · ') : err.message)
-      return false
-    }
+interface InvoiceViewProps {
+  invoice: InvoiceDto
+  accountant: boolean
+  back: { to: string; label: string }
+  /** Chaque action de l'API renvoie la facture à jour : on la remonte, sans recharger. */
+  onChange: (invoice: InvoiceDto) => void
+}
+
+function InvoiceView({ invoice, accountant, back, onChange }: InvoiceViewProps) {
+  const navigate = useNavigate()
+  const toast = useToast()
+  const [confirmIssue, setConfirmIssue] = useState(false)
+  const issue = useAction()
+  const payment = useAction()
+  const credit = useAction()
+  const reminder = useAction()
+  const duplicate = useAction()
+
+  const draft = invoice.status === 'DRAFT'
+  const open = !draft && invoice.remaining > 0
+  const headerError = issue.error ?? duplicate.error
+
+  async function apply(action: ReturnType<typeof useAction>, call: () => Promise<InvoiceDto>, done: string): Promise<boolean> {
+    const updated = await action.run(call)
+    if (!updated) return false
+    onChange(updated)
+    toast(done)
+    return true
   }
 
-  if (!inv) return error ? <div className="alert alert--error">{error}</div> : <div className="loading">Chargement…</div>
-  const open = inv.status !== 'DRAFT' && inv.remaining > 0
+  async function handleDuplicate() {
+    const lines = invoice.lines.map(({ label, quantity, unitPrice, vatRate }) => ({ label, quantity, unitPrice, vatRate }))
+    const copy = await duplicate.run(() => api.createInvoice({ clientId: invoice.clientId, dueDate: invoice.dueDate, lines }))
+    if (!copy) return
+    toast('Brouillon créé à partir de cette facture')
+    navigate(`/invoices/${copy.id}/edit`)
+  }
 
   return (
-    <div className="stack">
-      <Link to="/" className="back-link">← Factures</Link>
-      <div className="page-header">
-        <div>
-          <h1>{inv.number ?? 'Brouillon'} <span className={`badge ${STATUS[inv.status][1]}`}>{STATUS[inv.status][0]}</span></h1>
-          <p>{inv.clientName} · échéance {day(inv.dueDate)}{inv.issuedAt && ` · émise le ${day(inv.issuedAt)}`}{inv.daysOverdue > 0 && inv.remaining > 0 && ` · ${inv.daysOverdue} jour(s) de retard`}</p>
-        </div>
-        {accountant && inv.status === 'DRAFT' && (
-          <div className="row">
-            <Link to={`/invoices/${inv.id}/edit`} className="btn">Modifier</Link>
-            <button className="btn btn--primary" onClick={() => run(() => mockApi.issue(inv.id))}>Émettre</button>
-          </div>
-        )}
-      </div>
-      {error && <div className="alert alert--error">{error}</div>}
-      <div className="card">
-        <table className="table">
-          <thead><tr><th>Désignation</th><th className="num">Qté</th><th className="num">PU HT</th><th className="num">TVA</th><th className="num">Total TTC</th></tr></thead>
-          <tbody>{inv.lines.map((l) => <tr key={l.position}><td>{l.label}</td><td className="num">{l.quantity}</td><td className="num">{euro(l.unitPrice)}</td><td className="num">{l.vatRate} %</td><td className="num">{euro(l.totalTtc)}</td></tr>)}</tbody>
-          <tfoot>
-            <tr><td colSpan={4}>Total HT / TVA</td><td className="num">{euro(inv.totalHt)} / {euro(inv.totalVat)}</td></tr>
-            <tr><td colSpan={4} className="strong">Total TTC</td><td className="num strong">{euro(inv.totalTtc)}</td></tr>
-            <tr><td colSpan={4}>Payé · avoirs</td><td className="num">{euro(inv.paid)} · {euro(inv.credited)}</td></tr>
-            <tr><td colSpan={4} className="strong">Reste dû</td><td className="num strong">{euro(inv.remaining)}</td></tr>
-          </tfoot>
-        </table>
-      </div>
-      <div className="grid grid--2">
-        <div className="card stack stack--small">
-          <h2>Paiements</h2>
-          {inv.payments.length === 0 ? <p className="muted">Aucun paiement.</p> : <ul>{inv.payments.map((p) => <li key={p.id}>{day(p.date)} — {euro(p.amount)} ({METHODS[p.method]})</li>)}</ul>}
-          {accountant && open && (
-            <div className="row row--wrap">
-              <input type="date" value={pay.date} onChange={(e) => setPay({ ...pay, date: e.target.value })} aria-label="Date" />
-              <input className="num-input" type="number" step="0.01" placeholder="Montant" value={pay.amount} onChange={(e) => setPay({ ...pay, amount: e.target.value })} aria-label="Montant" />
-              <select value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value as PaymentMethod })} aria-label="Moyen">{(Object.keys(METHODS) as PaymentMethod[]).map((m) => <option key={m} value={m}>{METHODS[m]}</option>)}</select>
-              <button className="btn btn--primary btn--small" onClick={() => run(() => mockApi.pay(inv.id, pay.date, Number(pay.amount), pay.method)).then((ok) => ok && setPay({ ...pay, amount: '' }))}>Enregistrer</button>
-              <button className="btn btn--ghost btn--small" onClick={() => setPay({ ...pay, amount: String(inv.remaining) })}>Solde</button>
-            </div>
+    <Stack>
+      <PageHeader
+        title={invoice.number ?? 'Brouillon'}
+        adornment={<InvoiceStatusBadge status={invoice.status} />}
+        subtitle={
+          <>
+            {invoice.clientName} · échéance {day(invoice.dueDate)}
+            {invoice.issuedAt && ` · émise le ${day(invoice.issuedAt)}`}
+            {open && invoice.daysOverdue > 0 && ` · ${plural(invoice.daysOverdue, 'jour')} de retard`}
+          </>
+        }
+        back={back}
+        actions={
+          <>
+            {!draft && <Button onClick={() => window.print()}>Imprimer</Button>}
+            {accountant && !draft && (
+              <Button onClick={() => void handleDuplicate()} loading={duplicate.pending}>
+                Dupliquer
+              </Button>
+            )}
+            {accountant && draft && <ButtonLink to={`/invoices/${invoice.id}/edit`}>Modifier</ButtonLink>}
+            {accountant && draft && (
+              <Button variant="primary" onClick={() => setConfirmIssue(true)}>
+                Émettre
+              </Button>
+            )}
+          </>
+        }
+      />
+      {headerError && <Alert tone="error">{Object.values(headerError.fields ?? {}).join(' · ') || headerError.message}</Alert>}
+
+      <Card>
+        <InvoiceLines invoice={invoice} />
+        {!draft && <ProgressBar label="Part de la facture déjà réglée ou couverte par un avoir" value={invoice.paid + invoice.credited} max={invoice.totalTtc} tone={open ? 'accent' : 'success'} />}
+      </Card>
+
+      {!draft && (
+        <ScreenOnly>
+          <Grid columns={2}>
+            <Card title="Paiements">
+              {invoice.payments.length === 0 ? (
+                <Text tone="muted" as="p">
+                  Aucun paiement.
+                </Text>
+              ) : (
+                <ul>
+                  {invoice.payments.map((p) => (
+                    <li key={p.id}>
+                      {day(p.date)} : {euro(p.amount)} ({METHOD_LABEL[p.method]})
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {accountant && open && (
+                <PaymentForm remaining={invoice.remaining} pending={payment.pending} error={payment.error} onSubmit={(req) => apply(payment, () => api.addPayment(invoice.id, req), 'Paiement enregistré')} />
+              )}
+            </Card>
+
+            <Card title="Avoirs">
+              {invoice.creditNotes.length === 0 ? (
+                <Text tone="muted" as="p">
+                  Aucun avoir.
+                </Text>
+              ) : (
+                <ul>
+                  {invoice.creditNotes.map((c) => (
+                    <li key={c.id}>
+                      <Text strong>{c.number}</Text> : {euro(c.amount)}, {c.reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {accountant && open && <CreditNoteForm pending={credit.pending} error={credit.error} onSubmit={(req) => apply(credit, () => api.addCreditNote(invoice.id, req), 'Avoir créé')} />}
+            </Card>
+          </Grid>
+
+          {accountant && (
+            <Card title="Relances">
+              {reminder.error && <Alert tone="error">{reminder.error.message}</Alert>}
+              <ReminderTrack
+                daysOverdue={invoice.daysOverdue}
+                reminders={invoice.reminders}
+                reminderDue={invoice.reminderDue}
+                open={open}
+                pending={reminder.pending}
+                onSend={(level) => void apply(reminder, () => api.sendReminder(invoice.id, level), `Relance de niveau ${level} enregistrée`)}
+              />
+            </Card>
           )}
-        </div>
-        <div className="card stack stack--small">
-          <h2>Avoirs</h2>
-          {inv.creditNotes.length === 0 ? <p className="muted">Aucun avoir.</p> : <ul>{inv.creditNotes.map((c) => <li key={c.id}><strong>{c.number}</strong> — {euro(c.amount)} : {c.reason}</li>)}</ul>}
-          {accountant && open && (
-            <div className="row row--wrap">
-              <input className="num-input" type="number" step="0.01" placeholder="Montant" value={credit.amount} onChange={(e) => setCredit({ ...credit, amount: e.target.value })} aria-label="Montant de l'avoir" />
-              <input placeholder="Motif" value={credit.reason} onChange={(e) => setCredit({ ...credit, reason: e.target.value })} aria-label="Motif" />
-              <button className="btn btn--small" onClick={() => run(() => mockApi.credit(inv.id, Number(credit.amount), credit.reason)).then((ok) => ok && setCredit({ amount: '', reason: '' }))}>Créer l'avoir</button>
-            </div>
-          )}
-        </div>
-      </div>
-      {accountant && inv.status !== 'DRAFT' && (
-        <div className="card stack stack--small">
-          <h2>Relances</h2>
-          {inv.reminders.length === 0 ? <p className="muted">Aucune relance envoyée.</p> : <ul>{inv.reminders.map((r) => <li key={r.level}>Niveau {r.level} — {day(r.sentAt)} par {r.sentByName}</li>)}</ul>}
-          {inv.reminderDue && <button className="btn btn--primary btn--small" onClick={() => run(() => mockApi.remind(inv.id, inv.reminderDue as number))}>Enregistrer la relance de niveau {inv.reminderDue}</button>}
-        </div>
+        </ScreenOnly>
       )}
-    </div>
+
+      <ConfirmDialog
+        open={confirmIssue}
+        title="Émettre cette facture ?"
+        confirmLabel="Émettre la facture"
+        pending={issue.pending}
+        onCancel={() => setConfirmIssue(false)}
+        onConfirm={async () => {
+          await apply(issue, () => api.issueInvoice(invoice.id), 'Facture émise')
+          setConfirmIssue(false)
+        }}
+      >
+        Elle recevra son numéro définitif et ne pourra plus être modifiée : toute correction passera par un avoir.
+      </ConfirmDialog>
+    </Stack>
   )
 }

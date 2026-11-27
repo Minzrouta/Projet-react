@@ -1,94 +1,85 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
-import { BrowserRouter, Navigate, NavLink, Route, Routes } from 'react-router'
-import { mockApi, type UserDto } from './mocks/api'
-import DashboardPage from './pages/DashboardPage'
-import EditorPage from './pages/EditorPage'
-import InvoicePage from './pages/InvoicePage'
-import InvoicesPage from './pages/InvoicesPage'
+import { lazy, Suspense } from 'react'
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router'
+import { Alert } from './components/Alert'
+import { AppLayout, type NavItem } from './components/AppLayout'
+import { ErrorState } from './components/ErrorState'
+import { Loader } from './components/Loader'
+import { ToastProvider } from './components/Toast'
+import { AuthProvider, useAuth } from './features/auth/AuthContext'
+import { useSession, type Session } from './features/auth/session'
+import { APP_NAME } from './hooks/useDocumentTitle'
+import { useQuery } from './hooks/useQuery'
+import { api } from './lib/api'
 import LoginPage from './pages/LoginPage'
-import RemindersPage from './pages/RemindersPage'
 
-// Utilisateur connecté : gardé en mémoire (état React), jamais dans localStorage.
-interface AuthContextValue {
-  user: UserDto | null
-  login: (user: UserDto) => void
-  logout: () => void
+// Une page = un fichier JavaScript chargé à la demande (code splitting par route).
+const InvoicesPage = lazy(() => import('./pages/InvoicesPage'))
+const InvoicePage = lazy(() => import('./pages/InvoicePage'))
+const EditorPage = lazy(() => import('./pages/EditorPage'))
+const RemindersPage = lazy(() => import('./pages/RemindersPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+
+/** Chacun ne voit que les entrées qui le concernent. */
+function navFor({ accountant }: Session): NavItem[] {
+  if (!accountant) return [{ to: '/', label: 'Mes factures' }]
+  return [
+    { to: '/', label: 'Factures' },
+    { to: '/new', label: 'Nouvelle facture' },
+    { to: '/reminders', label: 'Relances' },
+    { to: '/dashboard', label: 'Tableau de bord' },
+  ]
 }
 
-const AuthContext = createContext<AuthContextValue>({
-  user: null,
-  login: () => undefined,
-  logout: () => undefined,
-})
+/** Route parente des pages connectées : vérifie la session, charge les droits, pose le cadre. */
+function ProtectedLayout() {
+  const { user, ready, logout } = useAuth()
+  const location = useLocation()
+  const roles = useQuery<string[]>(`roles:${user?.id ?? ''}`, async () => (user ? api.myRoles() : []))
 
-export function useAuth(): AuthContextValue {
-  return useContext(AuthContext)
-}
+  if (!ready) return <Loader />
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
 
-/** Utilisateur connecté, garanti non nul dans les pages protégées. */
-export function useUser(): UserDto {
-  const { user } = useAuth()
-  if (!user) throw new Error('Page protégée rendue sans utilisateur connecté')
-  return user
-}
-
-function RequireAuth({ children, admin = false }: { children: ReactNode; admin?: boolean }) {
-  const { user } = useAuth()
-  if (!user) return <Navigate to="/login" replace />
-  if (admin && user.role !== 'ADMIN') return <Navigate to="/" replace />
-  return <>{children}</>
-}
-
-function Layout({ children }: { children: ReactNode }) {
-  const { user, logout } = useAuth()
-  if (!user) return <>{children}</>
+  const session: Session | null = roles.data ? { user, accountant: roles.data.includes('ACCOUNTANT'), admin: user.role === 'ADMIN' } : null
   return (
-    <div className="app">
-      <header className="app-header">
-        <div className="app-header__brand">Facturation & relances</div>
-        <nav className="app-header__nav">
-          <NavLink to="/" end>Factures</NavLink>
-          <NavLink to="/new">Nouvelle facture</NavLink>
-          <NavLink to="/reminders">Relances</NavLink>
-          <NavLink to="/dashboard">Tableau de bord</NavLink>
-        </nav>
-        <div className="app-header__user">
-          <span className="app-header__name">{user.displayName}</span>
-          {user.role === 'ADMIN' && <span className="badge badge--accent">admin</span>}
-          <button className="btn btn--ghost btn--small" onClick={logout}>Déconnexion</button>
-        </div>
-      </header>
-      <main className="app-main">{children}</main>
-    </div>
+    <AppLayout brand={APP_NAME} nav={session ? navFor(session) : []} userName={user.displayName} admin={user.role === 'ADMIN'} onLogout={logout}>
+      {roles.error && <ErrorState error={roles.error} onRetry={roles.reload} />}
+      {!session && !roles.error && <Loader />}
+      {session && (
+        <Suspense fallback={<Loader />}>
+          <Outlet context={session} />
+        </Suspense>
+      )}
+    </AppLayout>
   )
 }
 
+/** Garde des pages du service comptable. */
+function AccountantOnly() {
+  const session = useSession()
+  if (!session.accountant) return <Alert tone="warning">Réservé au service comptable.</Alert>
+  return <Outlet context={session} />
+}
+
 export default function App() {
-  const [user, setUser] = useState<UserDto | null>(null)
-  const value: AuthContextValue = {
-    user,
-    login: setUser,
-    logout: () => {
-      mockApi.logout()
-      setUser(null)
-    },
-  }
   return (
-    <AuthContext.Provider value={value}>
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
-            <Route path="/" element={<RequireAuth><InvoicesPage /></RequireAuth>} />
-            <Route path="/new" element={<RequireAuth><EditorPage /></RequireAuth>} />
-            <Route path="/invoices/:id/edit" element={<RequireAuth><EditorPage /></RequireAuth>} />
-            <Route path="/invoices/:id" element={<RequireAuth><InvoicePage /></RequireAuth>} />
-            <Route path="/reminders" element={<RequireAuth><RemindersPage /></RequireAuth>} />
-            <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
-            <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
-    </AuthContext.Provider>
+    <AuthProvider>
+      <ToastProvider>
+        <Routes>
+          <Route path="login" element={<LoginPage />} />
+          <Route element={<ProtectedLayout />}>
+            <Route index element={<InvoicesPage />} />
+            <Route path="invoices/:id" element={<InvoicePage />} />
+            <Route element={<AccountantOnly />}>
+              <Route path="new" element={<EditorPage />} />
+              <Route path="invoices/:id/edit" element={<EditorPage />} />
+              <Route path="reminders" element={<RemindersPage />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+            </Route>
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </ToastProvider>
+    </AuthProvider>
   )
 }

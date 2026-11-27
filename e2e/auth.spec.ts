@@ -12,7 +12,7 @@ test('un mauvais mot de passe est refusé avec un message', async ({ page }) => 
   await page.getByLabel('Email').fill('claire@example.com')
   await page.getByLabel('Mot de passe').fill('mauvais')
   await page.getByRole('button', { name: 'Se connecter' }).click()
-  await expect(page.getByText('Email ou mot de passe incorrect')).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveText('Email ou mot de passe incorrect')
   await expect(page).toHaveURL('/login')
 })
 
@@ -27,21 +27,24 @@ test('la comptable se connecte, puis se déconnecte', async ({ page }) => {
 
 test('un compte de démonstration remplit le formulaire', async ({ page }) => {
   await page.goto('/login')
-  await page.getByRole('row', { name: /ACME Industrie/ }).getByRole('button', { name: 'Utiliser' }).click()
+  await page.getByRole('button', { name: 'Utiliser le compte ACME Industrie' }).click()
   await expect(page.getByLabel('Email')).toHaveValue('acme@example.com')
   await page.getByRole('button', { name: 'Se connecter' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Mes factures' })).toBeVisible()
 })
 
-test('un client ne voit que ses factures émises', async ({ page }) => {
+test('un client ne voit que ses factures émises et aucune page comptable', async ({ page }) => {
   await login(page, 'client')
-  const rows = page.getByRole('table').getByRole('row')
-  await expect(rows).toHaveCount(3) // en-tête + 2 factures ACME
-  await expect(page.getByRole('table').getByText('Brouillon')).toHaveCount(0)
-  await expect(page.getByRole('columnheader', { name: 'Client' })).toHaveCount(0)
+  const table = page.getByRole('table', { name: 'Mes factures' })
+  await expect(table.getByRole('row')).toHaveCount(4) // en-tête + 3 factures ACME
+  await expect(table.getByText('Brouillon')).toHaveCount(0)
+  await expect(table.getByRole('columnheader', { name: 'Client' })).toHaveCount(0)
+
+  const nav = page.getByRole('navigation', { name: 'Navigation principale' })
+  await expect(nav.getByRole('link')).toHaveCount(1)
 
   // La facture ouverte ne propose ni paiement ni relance.
-  await rows.nth(1).getByRole('link').click()
+  await table.getByRole('link').first().click()
   await expect(page.getByRole('heading', { level: 2, name: 'Paiements' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Enregistrer' })).toHaveCount(0)
   await expect(page.getByRole('heading', { level: 2, name: 'Relances' })).toHaveCount(0)

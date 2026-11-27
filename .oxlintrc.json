@@ -9,6 +9,7 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "error",
+    "react/no-array-index-key": "error",
     "jsx-a11y/prefer-tag-over-role": "off"
   },
   "ignorePatterns": [

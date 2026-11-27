@@ -1,42 +1,42 @@
-import { useEffect, useState } from 'react'
-import { mockApi, type ApiError, type StatsDto } from '../mocks/api'
-import { euro, useAccountant } from './InvoicesPage'
+import { useState } from 'react'
+import { Card } from '../components/Card'
+import { ErrorState } from '../components/ErrorState'
+import { TextField } from '../components/Field'
+import { Grid, Stack } from '../components/Layout'
+import { Loader } from '../components/Loader'
+import { PageHeader } from '../components/PageHeader'
+import { StatTile } from '../components/StatTile'
+import { AgingChart } from '../features/invoices/AgingChart'
+import { agingBuckets } from '../features/invoices/invoice'
+import { useQuery } from '../hooks/useQuery'
+import { api } from '../lib/api'
+import { euro, plural } from '../lib/format'
 
 export default function DashboardPage() {
-  const accountant = useAccountant()
-  const [year, setYear] = useState(new Date().getFullYear())
-  const [stats, setStats] = useState<StatsDto | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (accountant) mockApi.stats(year).then(setStats).catch((e: ApiError) => setError(e.message))
-  }, [accountant, year])
-
-  if (accountant === false) return <div className="alert alert--warning">Réservé au service comptable.</div>
-  if (!stats) return error ? <div className="alert alert--error">{error}</div> : <div className="loading">Chargement…</div>
-
-  const tiles: [string, string, string][] = [
-    ['Facturé', euro(stats.invoiced), `dont ${euro(stats.credited)} d'avoirs`],
-    ['Encaissé', euro(stats.collected), `en ${stats.year}`],
-    ['Restant dû', euro(stats.outstanding), 'toutes années'],
-    ['En retard', euro(stats.overdueAmount), `${stats.overdueCount} facture(s)`],
-  ]
+  const [year, setYear] = useState(() => new Date().getFullYear())
+  const stats = useQuery(`stats:${year}`, () => api.stats(year))
+  const overdue = useQuery('overdue', () => api.listInvoices({ overdue: true }))
 
   return (
-    <div>
-      <div className="page-header">
-        <h1>Tableau de bord</h1>
-        <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} aria-label="Année" className="num-input" />
-      </div>
-      <div className="grid">
-        {tiles.map(([label, value, hint]) => (
-          <div key={label} className="card stat">
-            <span className="stat__label">{label}</span>
-            <span className="stat__value">{value}</span>
-            <span className="small muted">{hint}</span>
-          </div>
-        ))}
-      </div>
-    </div>
+    <Stack>
+      <PageHeader title="Tableau de bord" actions={<TextField label="Année" hideLabel numeric type="number" min={2000} max={2100} value={year} onChange={(e) => setYear(Number(e.target.value))} />} />
+
+      {stats.error && <ErrorState error={stats.error} onRetry={stats.reload} />}
+      {!stats.data && !stats.error && <Loader />}
+      {stats.data && (
+        <Grid>
+          <StatTile label="Facturé" value={euro(stats.data.invoiced)} hint={`dont ${euro(stats.data.credited)} d'avoirs`} />
+          <StatTile label="Encaissé" value={euro(stats.data.collected)} hint={`en ${stats.data.year}`} />
+          <StatTile label="Restant dû" value={euro(stats.data.outstanding)} hint="toutes années" />
+          <StatTile label="En retard" value={euro(stats.data.overdueAmount)} hint={plural(stats.data.overdueCount, 'facture')} />
+        </Grid>
+      )}
+
+      <Card title="Retards par ancienneté">
+        {overdue.error && <ErrorState error={overdue.error} onRetry={overdue.reload} />}
+        {!overdue.data && !overdue.error && <Loader />}
+        {overdue.data && <AgingChart buckets={agingBuckets(overdue.data)} />}
+      </Card>
+    </Stack>
   )
 }
