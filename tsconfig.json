@@ -24,6 +24,7 @@
   "include": [
     "src",
     "vite.config.ts",
+    ".storybook",
     "e2e",
     "playwright.config.ts"
   ]
