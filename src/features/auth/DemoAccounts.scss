@@ -1,0 +1,15 @@
+@use '../../styles/tokens' as *;
+
+.demo-accounts {
+  border-top: 1px solid $border;
+  padding-top: $space-4;
+
+  h2 {
+    font-size: 0.95rem;
+    margin-bottom: $space-2;
+  }
+
+  .table {
+    margin-bottom: $space-2;
+  }
+}

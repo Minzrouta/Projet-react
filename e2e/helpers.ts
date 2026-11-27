@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 
-// Comptes de démonstration du bouchon (src/mocks/data.ts).
+// Comptes de démonstration du mode bouchonné (src/mocks/data.ts).
 export const ACCOUNTS = {
   admin: { email: 'admin@example.com', password: 'admin123' },
   accountant: { email: 'claire@example.com', password: 'claire123' },
@@ -17,5 +17,5 @@ export async function login(page: Page, who: keyof typeof ACCOUNTS) {
 
 /** Les données sont en mémoire : on navigue par les liens, un rechargement remettrait tout à zéro. */
 export async function goTo(page: Page, link: string) {
-  await page.getByRole('navigation').getByRole('link', { name: link, exact: true }).click()
+  await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('link', { name: link, exact: true }).click()
 }

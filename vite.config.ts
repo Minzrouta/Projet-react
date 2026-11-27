@@ -8,7 +8,7 @@ import { defineConfig, type ServerOptions } from 'vite'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// /api est relayé vers le backend : le navigateur ne voit qu'une origine.
+// Même port que le front de départ. /api est relayé vers le backend : le navigateur ne voit qu'une origine.
 // Le relais retire l'en-tête Origin : le CORS du backend n'autorise que les ports 5101 à 5111 et
 // répondrait 403, alors que ces appels sont de même origine pour le navigateur.
 const server: ServerOptions = {
@@ -29,6 +29,11 @@ export default defineConfig({
   preview: server,
   test: {
     projects: [
+      {
+        // Tests unitaires de la logique métier (sans navigateur).
+        extends: true,
+        test: { name: 'unit', include: ['src/**/*.test.ts'] },
+      },
       {
         // Chaque story devient un test : rendu, fonction play, contrôle d'accessibilité.
         extends: true,

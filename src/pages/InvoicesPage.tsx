@@ -1,66 +1,59 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
-import { mockApi, type ApiError, type InvoiceStatus, type InvoiceSummary } from '../mocks/api'
-
-export const STATUS: Record<InvoiceStatus, [string, string]> = {
-  DRAFT: ['Brouillon', ''], ISSUED: ['Émise', 'badge--info'], PARTIALLY_PAID: ['Payée partiellement', 'badge--warning'],
-  PAID: ['Payée', 'badge--success'], OVERDUE: ['En retard', 'badge--danger'], CANCELLED: ['Annulée', ''],
-}
-export const euro = (n: number) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
-export const day = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR')
-
-/** Rôle ACCOUNTANT de l'utilisateur courant. */
-export function useAccountant() {
-  const [acc, setAcc] = useState<boolean | null>(null)
-  useEffect(() => {
-    mockApi.myRoles().then((r) => setAcc(r.includes('ACCOUNTANT'))).catch(() => setAcc(false))
-  }, [])
-  return acc
-}
+import { useState } from 'react'
+import { useSearchParams } from 'react-router'
+import { ButtonLink } from '../components/Button'
+import { EmptyState } from '../components/EmptyState'
+import { ErrorState } from '../components/ErrorState'
+import { SelectField, TextField } from '../components/Field'
+import { Loader } from '../components/Loader'
+import { PageHeader } from '../components/PageHeader'
+import { useSession } from '../features/auth/session'
+import { STATUSES, STATUS_LABEL } from '../features/invoices/invoice'
+import { InvoiceTable } from '../features/invoices/InvoiceTable'
+import { useQuery } from '../hooks/useQuery'
+import { api, type InvoiceStatus } from '../lib/api'
+import { plural } from '../lib/format'
 
 export default function InvoicesPage() {
-  const accountant = useAccountant()
-  const [status, setStatus] = useState<InvoiceStatus | ''>('')
-  const [list, setList] = useState<InvoiceSummary[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const { accountant } = useSession()
+  // Le filtre vit dans l'URL : il survit au rechargement et se partage par lien.
+  const [params, setParams] = useSearchParams()
+  const [search, setSearch] = useState('')
+  const requested = params.get('status') ?? ''
+  const status = (STATUSES as string[]).includes(requested) ? (requested as InvoiceStatus) : undefined
+  const invoices = useQuery(`invoices:${status ?? ''}`, () => api.listInvoices({ status }))
 
-  useEffect(() => {
-    mockApi.list(status || undefined).then(setList).catch((e: ApiError) => setError(e.message))
-  }, [status])
+  const title = accountant ? 'Factures' : 'Mes factures'
+  // La recherche filtre la liste déjà chargée : c'est une donnée dérivée, pas un état de plus.
+  const needle = search.trim().toLowerCase()
+  const visible = (invoices.data ?? []).filter((i) => !needle || `${i.number ?? 'brouillon'} ${i.clientName}`.toLowerCase().includes(needle))
 
   return (
-    <div>
-      <div className="page-header">
-        <div>
-          <h1>{accountant ? 'Factures' : 'Mes factures'}</h1>
-          <p>{list ? `${list.length} facture(s)` : '…'}</p>
-        </div>
-        <div className="row">
-          <select value={status} onChange={(e) => setStatus(e.target.value as InvoiceStatus | '')} aria-label="Statut">
-            <option value="">Tous les statuts</option>
-            {(Object.keys(STATUS) as InvoiceStatus[]).filter((s) => accountant || s !== 'DRAFT').map((s) => <option key={s} value={s}>{STATUS[s][0]}</option>)}
-          </select>
-          {accountant && <Link to="/new" className="btn btn--primary">Nouvelle facture</Link>}
-        </div>
-      </div>
-      {error && <div className="alert alert--error">{error}</div>}
-      {!list ? <div className="loading">Chargement…</div> : list.length === 0 ? <div className="empty">Aucune facture.</div> : (
-        <table className="table">
-          <thead><tr><th>Numéro</th>{accountant && <th>Client</th>}<th>Échéance</th><th>Statut</th><th className="num">TTC</th><th className="num">Reste dû</th></tr></thead>
-          <tbody>
-            {list.map((i) => (
-              <tr key={i.id}>
-                <td><Link to={`/invoices/${i.id}`}>{i.number ?? 'Brouillon'}</Link></td>
-                {accountant && <td>{i.clientName}</td>}
-                <td>{day(i.dueDate)}</td>
-                <td><span className={`badge ${STATUS[i.status][1]}`}>{STATUS[i.status][0]}</span></td>
-                <td className="num">{euro(i.totalTtc)}</td>
-                <td className="num strong">{euro(i.remaining)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+    <>
+      <PageHeader
+        title={title}
+        subtitle={invoices.data ? plural(visible.length, 'facture') : '…'}
+        actions={
+          <>
+            <TextField label="Rechercher une facture" hideLabel type="search" placeholder="Rechercher…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <SelectField label="Statut" hideLabel value={status ?? ''} onChange={(e) => setParams(e.target.value ? { status: e.target.value } : {}, { replace: true })}>
+              <option value="">Tous les statuts</option>
+              {STATUSES.filter((s) => accountant || s !== 'DRAFT').map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </option>
+              ))}
+            </SelectField>
+            {accountant && (
+              <ButtonLink to="/new" variant="primary">
+                Nouvelle facture
+              </ButtonLink>
+            )}
+          </>
+        }
+      />
+      {invoices.error && <ErrorState error={invoices.error} onRetry={invoices.reload} />}
+      {invoices.loading && !invoices.error && <Loader />}
+      {invoices.data && !invoices.loading && (visible.length > 0 ? <InvoiceTable caption={title} invoices={visible} showClient={accountant} /> : <EmptyState>Aucune facture.</EmptyState>)}
+    </>
   )
 }

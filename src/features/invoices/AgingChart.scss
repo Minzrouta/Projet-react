@@ -1,0 +1,56 @@
+@use '../../styles/tokens' as *;
+
+.aging-chart {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 $space-2;
+
+  th {
+    width: 9.5rem;
+    padding: 0 $space-3 0 0;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: $text-muted;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+  }
+
+  // Barre native : la largeur vient de value / max, sans style en ligne.
+  &__bar {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: 1;
+    height: 14px;
+    border: none;
+    background: transparent;
+
+    &::-webkit-progress-bar {
+      background: transparent;
+    }
+
+    &::-webkit-progress-value {
+      background: $danger;
+      border-radius: 0 4px 4px 0;
+    }
+
+    &::-moz-progress-bar {
+      background: $danger;
+      border-radius: 0 4px 4px 0;
+    }
+  }
+
+  &__value {
+    min-width: 6.5rem;
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
