@@ -11,8 +11,10 @@
     "lint": "oxlint",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:api": "playwright test --config playwright.api.config.ts",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -25,7 +27,7 @@
     "@storybook/addon-docs": "^10.6.9",
     "@storybook/addon-vitest": "^10.6.9",
     "@storybook/react-vite": "^10.6.9",
-    "@types/node": "^26.6.11",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.1",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
